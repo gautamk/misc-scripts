@@ -11,11 +11,7 @@ args = parser.parse_args()
 result = subprocess.check_output(["aws", "ec2", "run-instances", "--image-id", args.ami, "--count", "1", "--instance-type", "t1.micro",
      "--key-name", "dineshv", "--security-groups", "flow-sec-grp", "--placement", "AvailabilityZone=us-east-1d"])
 parsed_result = json.loads(result)
-print parsed_result.get("ReservationId")
 instance = parsed_result.get("Instances",[{}])[0]
-print instance.get("Placement",{}).get("AvailabilityZone",{})
-print instance.get("PublicDnsName")
-
 instance_id = parsed_result.get("Instances",[{}])[0].get("InstanceId")
 print instance_id
 
