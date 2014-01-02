@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+import subprocess
+from datetime import datetime
+import argparse
+
+parser = argparse.ArgumentParser(description='Create an AWS image with instance id')
+parser.add_argument('-i', '--instance-id', help='Instance Id', required=True)
+parser.add_argument('-n', '--name', help="Name of the ami", required=False)
+args = parser.parse_args()
+now = datetime.today().strftime("%Y-%m-%d/%I_%M_%S_%p")
+name = "({})({})".format(args.name, now) if args.name else now
+subprocess_args = ["aws", "ec2", "create-image", "--instance-id", args.instance_id, "--name",
+                   name]
+try:
+    result = subprocess.check_output(subprocess_args)
+    print result
+except Exception as e:
+    print e.message
+    print " ".join(subprocess_args)
+
+

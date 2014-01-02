@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+import subprocess
+import argparse
+import json
+import webbrowser
+
+parser = argparse.ArgumentParser(description='Start An AWS instance with the specified AMI id')
+parser.add_argument('-a', '--ami', help='AMI ID', required=True)
+parser.add_argument('-n','--name',help = "Name of the instance", required = False)
+args = parser.parse_args()
+result = subprocess.check_output(["aws", "ec2", "run-instances", "--image-id", args.ami, "--count", "1", "--instance-type", "t1.micro",
+     "--key-name", "dineshv", "--security-groups", "flow-sec-grp", "--placement", "AvailabilityZone=us-east-1d"])
+parsed_result = json.loads(result)
+print parsed_result.get("ReservationId")
+instance = parsed_result.get("Instances",[{}])[0]
+print instance.get("Placement",{}).get("AvailabilityZone",{})
+print instance.get("PublicDnsName")
+
+instance_id = parsed_result.get("Instances",[{}])[0].get("InstanceId")
+print instance_id
+
+
+if args.name:
+    tags_result = subprocess.check_output(["aws","ec2","create-tags","--resources",instance_id,"--tags","Key=Name,Value={}".format(args.name)])
+    print "Set Name ",json.loads(tags_result).get("return")
+
+webbrowser.open_new_tab("https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instancesFilter=all-instances;instanceTypeFilter=all-instance-types;search={}".format(instance_id))
