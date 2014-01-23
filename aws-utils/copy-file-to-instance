@@ -5,14 +5,17 @@ import argparse
 import json
 
 default_ssh_key = os.environ.get("AWS_EC2_DEFAULT_SSH_KEY")
-parser = argparse.ArgumentParser(description='Shell Into an instance')
-parser.add_argument('instance_id', help='Instance ID')
-parser.add_argument('-p', '--tunnel-port', help="A port to tunnel", required=False)
+parser = argparse.ArgumentParser(description='Copy file from instance')
+parser.add_argument("instance_id", help="Instance Id")
+parser.add_argument("source", help="Where to copy the file from on the instance")
+parser.add_argument("destination", help="Where to copy the file to")
 parser.add_argument('-s', '--ssh-key', required=False if default_ssh_key else True)
-parser.add_argument('-d', '--debug')
 args = parser.parse_args()
 ssh_key = args.ssh_key if args.ssh_key else default_ssh_key
+
 instance_id = args.instance_id
+destination = args.destination
+source = args.source
 
 subprocess_args = ["aws", "ec2", "describe-instances", "--instance-ids", instance_id]
 
@@ -24,13 +27,5 @@ instance = reservation.get("Instances", [{}])[0]
 dns_name = instance.get("PublicDnsName")
 
 if ssh_key:
-    if args.tunnel_port:
-        subprocess.call(
-            ["ssh", "-i", ssh_key, "-L", "{port}:localhost:{port}".format(port=args.tunnel_port),
-             "ubuntu@{}".format(dns_name)])
-    subprocess.call(["ssh", "ubuntu@{}".format(dns_name), "-i", ssh_key])
+    subprocess.call(["scp", "-i", ssh_key, source, "ubuntu@{}:{}".format(dns_name, destination)])
 
-if args.debug:
-    print "calling ", " ".join(subprocess_args)
-    print "Default sshkey {}".format(default_ssh_key)
-    print result
