@@ -13,19 +13,20 @@ parser.add_argument('-s', '--ssh-key', required=False if default_ssh_key else Tr
 args = parser.parse_args()
 ssh_key = args.ssh_key if args.ssh_key else default_ssh_key
 
-instance_id = args.instance_id
+instance_ids = args.instance_id.split(",")
 destination = args.destination
 source = args.source
 
-subprocess_args = ["aws", "ec2", "describe-instances", "--instance-ids", instance_id]
+for instance_id in instance_ids:
+    subprocess_args = ["aws", "ec2", "describe-instances", "--instance-ids", instance_id]
 
-result = subprocess.check_output(subprocess_args)
+    result = subprocess.check_output(subprocess_args)
 
-parsed_result = json.loads(result)
-reservation = parsed_result.get("Reservations", [{}])[0]
-instance = reservation.get("Instances", [{}])[0]
-dns_name = instance.get("PublicDnsName")
+    parsed_result = json.loads(result)
+    reservation = parsed_result.get("Reservations", [{}])[0]
+    instance = reservation.get("Instances", [{}])[0]
+    dns_name = instance.get("PublicDnsName")
 
-if ssh_key:
-    subprocess.call(["scp", "-i", ssh_key, "ubuntu@{}:{}".format(dns_name, source), destination])
+    if ssh_key:
+        subprocess.call(["scp", "-i", ssh_key, "ubuntu@{}:{}".format(dns_name, source), destination])
 

@@ -10,11 +10,13 @@ parser.add_argument('instance_id', help='Instance ID')
 parser.add_argument('-p', '--tunnel-port', help="A port to tunnel", required=False)
 parser.add_argument('-s', '--ssh-key', required=False if default_ssh_key else True)
 parser.add_argument('-d', '--debug')
+parser.add_argument('-r','--region', default="us-east-1")
 args = parser.parse_args()
 ssh_key = args.ssh_key if args.ssh_key else default_ssh_key
 instance_id = args.instance_id
+region = args.region
 
-subprocess_args = ["aws", "ec2", "describe-instances", "--instance-ids", instance_id]
+subprocess_args = ["aws","--region", region  ,"ec2", "describe-instances", "--instance-ids", instance_id]
 
 result = subprocess.check_output(subprocess_args)
 

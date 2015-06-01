@@ -3,7 +3,7 @@ import subprocess
 import argparse
 import json
 import webbrowser
-
+from datetime import datetime
 parser = argparse.ArgumentParser(description='Start An AWS instance with the specified AMI id')
 parser.add_argument('ami', help='AMI ID')
 parser.add_argument('-n', '--name', help="Name of the instance", required=False)
@@ -11,21 +11,38 @@ parser.add_argument('-r', '--region', help="Preferred region", default="us-east-
 parser.add_argument('-t', '--instance-type', help="Instance Type example t1.micro", default='t1.micro')
 parser.add_argument('-sg', '--security-group', help="Security Group", default="flow-sec-grp")
 parser.add_argument('-c', '--count', help="Number of instances to launch", default=1, type=int)
+parser.add_argument('--env', help="The environment for the instance", choices=['prd','preview','play', 'samosa', 'invalid'], default="invalid")
+parser.add_argument('--type', help="The type of instance", choices=['fnd','bknd','invalid'], default="invalid")
 args = parser.parse_args()
 result = subprocess.check_output(
     ["aws", "ec2", "run-instances", "--image-id", args.ami, "--count", str(args.count), "--instance-type", args.instance_type,
      "--key-name", "dineshv", "--security-groups", args.security_group, "--placement",
-     "AvailabilityZone={}".format(args.region)])
+     "AvailabilityZone={}".format(args.region)
+     ])
 parsed_result = json.loads(result)
 
+tags = {
+    "env":args.env,
+    "type": args.type,
+    "Name": str(datetime.now().strftime("%H:%M:%S %d-%m-%Y"))
+}
 for instance in parsed_result.get("Instances", [{}]):
     instance_id = instance.get("InstanceId")
     print instance_id
+    
+    tag_data = []
+    for key,value in tags.iteritems():
+        tag_data.append({
+            "Key":key,
+            "Value":value
+            })
+    tag_string =  json.dumps(tag_data)
+    print "Setting tags ", tag_string
 
-    if args.name:
-        tags_result = subprocess.check_output(
-            ["aws", "ec2", "create-tags", "--resources", instance_id, "--tags", "Key=Name,Value={}".format(args.name)])
-        print "Set Name ", json.loads(tags_result).get("return")
+    tags_result = subprocess.check_output(["aws", "ec2", "create-tags", 
+        "--resources", instance_id, 
+        "--tags", tag_string])
+    print tags_result
 
     webbrowser.open_new_tab(
         "https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instancesFilter=all-instances;instanceTypeFilter=all-instance-types;search={}".format(

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import json
 import subprocess
 from datetime import datetime
 import argparse
+import webbrowser
 
 parser = argparse.ArgumentParser(description='Create an AWS image with instance id')
 parser.add_argument('-i', '--instance-id', help='Instance Id', required=True)
@@ -12,8 +14,11 @@ name = "({})({})".format(args.name, now) if args.name else now
 subprocess_args = ["aws", "ec2", "create-image", "--instance-id", args.instance_id, "--name",
                    name]
 try:
-    result = subprocess.check_output(subprocess_args)
-    print result
+    result_string = subprocess.check_output(subprocess_args)
+    result = json.loads(result_string)
+    ami_id = result.get("ImageId")
+    print ami_id
+    webbrowser.open_new_tab("https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:search={}".format(ami_id))
 except Exception as e:
     print e.message
     print " ".join(subprocess_args)
